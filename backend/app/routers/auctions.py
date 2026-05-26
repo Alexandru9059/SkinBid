@@ -216,6 +216,14 @@ def confirm_auction(auction_id: int, data: schemas.ConfirmAction, db: Session = 
         if not winner:
             raise HTTPException(400, 'No winning bid found (reserve price not met)')
 
+        buyer = db.query(models.User).filter(models.User.id == winner.user_id).first()
+        if buyer.balance < winner.amount:
+            raise HTTPException(400, 'Buyer has insufficient balance')
+
+        shop_owner = db.query(models.User).filter(models.User.id == auction.shop.user_id).first()
+        buyer.balance -= winner.amount
+        shop_owner.balance += winner.amount
+
         tx = models.Transaction(
             auction_id=auction_id,
             buyer_id=winner.user_id,
